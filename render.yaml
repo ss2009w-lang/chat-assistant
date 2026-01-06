@@ -1,0 +1,12 @@
+﻿services:
+  - type: web
+    name: firas-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: ADMIN_PASSWORD
+        value: 1234
+      - key: FIRAS_SECRET
+        value: firas-secret
