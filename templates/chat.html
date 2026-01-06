@@ -2,37 +2,132 @@
 <html lang='ar' dir='rtl'>
 <head>
 <meta charset='UTF-8'>
-<title>فراس</title>
-<link href='https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&display=swap' rel='stylesheet'>
+<title>فراس | المساعد الذكي</title>
+<link href='https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap' rel='stylesheet'>
 <style>
-body{margin:0;font-family:'Cairo',sans-serif;background:#141e30;height:100vh;display:flex;align-items:center;justify-content:center}
-#chat{width:420px;height:640px;background:#fff;border-radius:18px;display:flex;flex-direction:column;overflow:hidden}
-#head{background:#0d6efd;color:#fff;padding:16px;text-align:center;font-weight:600}
-#msgs{flex:1;padding:12px;overflow-y:auto;background:#f2f2f2}
-.msg{max-width:80%;margin:8px 0;padding:10px 14px;border-radius:14px;font-size:14px}
-.user{background:#0d6efd;color:#fff;margin-left:auto}
-.bot{background:#e9ecef;color:#000;margin-right:auto}
-#in{display:flex;padding:10px;border-top:1px solid #ddd}
-#txt{flex:1;padding:10px;border-radius:20px;border:1px solid #ccc}
-#btn{margin-right:8px;padding:0 16px;border:none;border-radius:20px;background:#0d6efd;color:#fff}
-#support{padding:8px;text-align:center;border-top:1px dashed #ddd;font-size:13px;background:#fafafa}
-#support a{color:#0d6efd;text-decoration:none;margin:0 6px}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:'Cairo',sans-serif;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center
+}
+#chat{
+  width:420px;
+  height:680px;
+  background:#ffffff;
+  border-radius:22px;
+  box-shadow:0 25px 60px rgba(0,0,0,.35);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden
+}
+#head{
+  background:linear-gradient(135deg,#0d6efd,#0b5ed7);
+  color:#fff;
+  padding:18px;
+  text-align:center;
+  font-size:18px;
+  font-weight:700
+}
+#sub{
+  font-size:12px;
+  opacity:.9
+}
+#msgs{
+  flex:1;
+  padding:14px;
+  overflow-y:auto;
+  background:#f4f6f9
+}
+.msg{
+  max-width:80%;
+  margin:10px 0;
+  padding:12px 16px;
+  border-radius:18px;
+  font-size:14px;
+  line-height:1.6;
+  animation:fade .3s ease
+}
+@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1}}
+.user{
+  background:#0d6efd;
+  color:#fff;
+  margin-left:auto;
+  border-bottom-right-radius:6px
+}
+.bot{
+  background:#e9ecef;
+  color:#000;
+  margin-right:auto;
+  border-bottom-left-radius:6px
+}
+#input{
+  display:flex;
+  padding:12px;
+  border-top:1px solid #ddd;
+  background:#fff
+}
+#txt{
+  flex:1;
+  padding:12px 16px;
+  border-radius:30px;
+  border:1px solid #ccc;
+  outline:none;
+  font-family:'Cairo',sans-serif
+}
+#btn{
+  margin-right:8px;
+  padding:0 22px;
+  border:none;
+  border-radius:30px;
+  background:#0d6efd;
+  color:#fff;
+  font-family:'Cairo',sans-serif;
+  font-weight:600;
+  cursor:pointer
+}
+#btn:hover{background:#0b5ed7}
+#footer{
+  padding:10px;
+  font-size:12px;
+  text-align:center;
+  background:#fafafa;
+  border-top:1px dashed #ddd
+}
+#footer a{
+  color:#0d6efd;
+  text-decoration:none;
+  margin:0 6px
+}
 </style>
 </head>
 <body>
+
 <div id='chat'>
-  <div id='head'>فراس</div>
+  <div id='head'>
+    فراس
+    <div id='sub'>المساعد الذكي</div>
+  </div>
+
   <div id='msgs'></div>
-  <div id='in'>
-    <input id='txt' placeholder='اكتب سؤالك هنا...'/>
+
+  <div id='input'>
+    <input id='txt' placeholder='اكتب سؤالك هنا...' />
     <button id='btn' onclick='send()'>إرسال</button>
   </div>
-  <div id='support'>
-    <span>الدعم:</span>
+
+  <div id='footer'>
+    في حال عدم توفر المعلومة:
     <a href='mailto:psmmc@psmmc.med.sa'>psmmc@psmmc.med.sa</a>
+    |
     <a href='tel:43880'>تحويلة 43880</a>
   </div>
 </div>
+
 <script src='/static/chat.js'></script>
 </body>
 </html>
