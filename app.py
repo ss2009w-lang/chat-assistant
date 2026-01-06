@@ -27,6 +27,13 @@ requests_log = defaultdict(list)
 def db():
     return sqlite3.connect(DB_FILE)
 
+if not os.path.exists(DB_FILE):
+    conn=db()
+    c=conn.cursor()
+    c.execute('CREATE TABLE IF NOT EXISTS unanswered (id INTEGER PRIMARY KEY AUTOINCREMENT, question TEXT, created_at TEXT)')
+    conn.commit()
+    conn.close()
+
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE,'w',encoding='utf-8') as f:
         json.dump([],f,ensure_ascii=False)
@@ -35,32 +42,24 @@ with open(DATA_FILE,encoding='utf-8-sig') as f:
     INFOS = json.load(f)
 
 def log_unanswered(q):
-    conn = db()
-    c = conn.cursor()
-    c.execute(
-        'INSERT INTO unanswered (question, created_at) VALUES (?,?)',
-        (q, datetime.now().isoformat())
-    )
+    conn=db()
+    c=conn.cursor()
+    c.execute('INSERT INTO unanswered (question, created_at) VALUES (?,?)',(q,datetime.now().isoformat()))
     conn.commit()
     conn.close()
 
 def allowed(ip):
-    now = time()
-    requests_log[ip] = [t for t in requests_log[ip] if now - t < WINDOW]
-    if len(requests_log[ip]) >= RATE_LIMIT:
+    now=time()
+    requests_log[ip]=[t for t in requests_log[ip] if now-t<WINDOW]
+    if len(requests_log[ip])>=RATE_LIMIT:
         return False
     requests_log[ip].append(now)
     return True
 
 def normalize(text):
-    text = text.lower()
-    text = re.sub(r'[^\w\s]', '', text)
-    words=[]
-    for w in text.split():
-        if w.startswith('ال') and len(w)>2:
-            w=w[2:]
-        words.append(w)
-    return words
+    text=text.lower()
+    text=re.sub(r'[^\w\s]','',text)
+    return [w[2:] if w.startswith('ال') and len(w)>2 else w for w in text.split()]
 
 def detect_category(words):
     for c,k in CATEGORY_HINTS.items():
@@ -68,23 +67,21 @@ def detect_category(words):
             return c
     return None
 
-def score(q, t):
+def score(q,t):
     return len(set(q)&set(normalize(t)))
 
 def find_answer(q):
     words=normalize(q)
     cat=detect_category(words)
-    candidates=INFOS
-    if cat:
-        candidates=[i for i in INFOS if i['category']==cat]
+    candidates=INFOS if not cat else [i for i in INFOS if i['category']==cat]
     best=None
-    best_s=0
+    smax=0
     for i in candidates:
         s=score(words,i['text'])
-        if s>best_s:
-            best_s=s
+        if s>smax:
+            smax=s
             best=i
-    if best_s>0:
+    if smax>0:
         return best['text']
     log_unanswered(q)
     return SUPPORT_TEXT
@@ -95,9 +92,8 @@ def chat():
 
 @app.route('/ask',methods=['POST'])
 def ask():
-    ip=request.remote_addr
-    if not allowed(ip):
-        return jsonify({'reply':'يرجى الانتظار قبل إرسال المزيد من الأسئلة'})
+    if not allowed(request.remote_addr):
+        return jsonify({'reply':'يرجى الانتظار'})
     return jsonify({'reply':find_answer(request.json.get('message',''))})
 
 @app.route('/admin')
@@ -115,19 +111,36 @@ def admin_login():
         return jsonify({'ok':False})
     return render_template('admin_login.html')
 
+@app.route('/admin/unanswered')
+def admin_unanswered():
+    if not session.get('admin'):
+        return jsonify([])
+    conn=db()
+    c=conn.cursor()
+    c.execute('SELECT question, created_at FROM unanswered ORDER BY id DESC')
+    rows=[{'question':r[0],'created_at':r[1]} for r in c.fetchall()]
+    conn.close()
+    return jsonify(rows)
+
 @app.route('/admin/export/unanswered')
 def export_unanswered():
     if not session.get('admin'):
         return redirect('/admin/login')
-
-    conn = db()
-    df = pd.read_sql_query('SELECT * FROM unanswered', conn)
+    conn=db()
+    df=pd.read_sql_query('SELECT * FROM unanswered',conn)
     conn.close()
+    file='unanswered_questions.xlsx'
+    df.to_excel(file,index=False)
+    return send_file(file,as_attachment=True)
 
-    file = 'unanswered_questions.xlsx'
-    df.to_excel(file, index=False)
-
-    return send_file(file, as_attachment=True)
+@app.route('/admin/add_info',methods=['POST'])
+def add_info():
+    if not session.get('admin'):
+        return jsonify({'error':True})
+    INFOS.append({'text':request.json['text'],'category':request.json['category']})
+    with open(DATA_FILE,'w',encoding='utf-8') as f:
+        json.dump(INFOS,f,ensure_ascii=False,indent=2)
+    return jsonify({'ok':True})
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
