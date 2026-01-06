@@ -1,6 +1,8 @@
 ﻿from flask import Flask, render_template, request, jsonify, session, redirect
 import json, re, os
 from datetime import datetime
+from time import time
+from collections import defaultdict
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FIRAS_SECRET','firas-secret')
@@ -17,6 +19,10 @@ CATEGORY_HINTS = {
     'مواقع': ['اين','موقع','مبنى','قسم','دور']
 }
 
+RATE_LIMIT = 5
+WINDOW = 60
+requests_log = defaultdict(list)
+
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE,'w',encoding='utf-8') as f:
         json.dump([],f,ensure_ascii=False)
@@ -24,80 +30,77 @@ if not os.path.exists(DATA_FILE):
 with open(DATA_FILE,encoding='utf-8-sig') as f:
     INFOS = json.load(f)
 
+def allowed(ip):
+    now = time()
+    requests_log[ip] = [t for t in requests_log[ip] if now - t < WINDOW]
+    if len(requests_log[ip]) >= RATE_LIMIT:
+        return False
+    requests_log[ip].append(now)
+    return True
+
 def normalize(text):
     text = text.lower()
     text = re.sub(r'[^\w\s]', '', text)
-    words = []
+    words=[]
     for w in text.split():
-        if w.startswith('ال') and len(w) > 2:
-            w = w[2:]
+        if w.startswith('ال') and len(w)>2:
+            w=w[2:]
         words.append(w)
     return words
 
 def detect_category(words):
-    for cat, keys in CATEGORY_HINTS.items():
-        if any(k in words for k in keys):
-            return cat
+    for c,k in CATEGORY_HINTS.items():
+        if any(x in words for x in k):
+            return c
     return None
 
-def score(q_words, info_text):
-    return len(set(q_words) & set(normalize(info_text)))
+def score(q, t):
+    return len(set(q)&set(normalize(t)))
 
 def log_forwarded(q):
     with open(FORWARDED_LOG,'a',encoding='utf-8') as f:
-        f.write(f"{datetime.now().isoformat()} | {q}\n")
+        f.write(f\"{datetime.now().isoformat()} | {q}\\n\")
 
-def search_infos(q_words, infos):
-    best = None
-    best_score = 0
-    for info in infos:
-        s = score(q_words, info['text'])
-        if s > best_score:
-            best_score = s
-            best = info
-    return best, best_score
-
-def find_answer(question):
-    q_words = normalize(question)
-    cat = detect_category(q_words)
-
+def find_answer(q):
+    words=normalize(q)
+    cat=detect_category(words)
+    candidates=INFOS
     if cat:
-        subset = [i for i in INFOS if i['category'] == cat]
-        best, sc = search_infos(q_words, subset)
-        if sc > 0:
-            return best['text']
-
-    best, sc = search_infos(q_words, INFOS)
-    if sc > 0:
+        candidates=[i for i in INFOS if i['category']==cat]
+    best=None
+    best_s=0
+    for i in candidates:
+        s=score(words,i['text'])
+        if s>best_s:
+            best_s=s
+            best=i
+    if best_s>0:
         return best['text']
-
-    log_forwarded(question)
+    log_forwarded(q)
     return SUPPORT_TEXT
 
 @app.route('/')
 def chat():
     return render_template('chat.html')
 
-@app.route('/ask', methods=['POST'])
+@app.route('/ask',methods=['POST'])
 def ask():
-    return jsonify({'reply': find_answer(request.json.get('message',''))})
+    ip=request.remote_addr
+    if not allowed(ip):
+        return jsonify({'reply':'يرجى الانتظار قبل إرسال المزيد من الأسئلة'})
+    return jsonify({'reply':find_answer(request.json.get('message',''))})
 
 @app.route('/health')
 def health():
-    return jsonify({
-        'status':'ok',
-        'bot':'firas',
-        'infos':len(INFOS),
-        'time':datetime.now().isoformat()
-    })
+    return jsonify({'status':'ok','infos':len(INFOS)})
 
-@app.route('/admin/login', methods=['GET','POST'])
+@app.route('/admin/login',methods=['GET','POST'])
 def admin_login():
-    if request.method == 'POST':
-        if request.json.get('pw') == ADMIN_PASSWORD:
-            session['admin'] = True
-            return jsonify({'ok': True})
-        return jsonify({'ok': False})
+    if request.method=='POST':
+        if request.json.get('pw')==ADMIN_PASSWORD:
+            session['admin']=True
+            return jsonify({'ok':True})
+        return jsonify({'ok':False})
     return render_template('admin_login.html')
 
 @app.route('/admin')
@@ -109,25 +112,25 @@ def admin():
 @app.route('/admin/data')
 def admin_data():
     if not session.get('admin'):
-        return jsonify({'error': True})
+        return jsonify({'error':True})
     forwarded=[]
     try:
         with open(FORWARDED_LOG,encoding='utf-8') as f:
             forwarded=list(dict.fromkeys([l.strip() for l in f if l.strip()]))
     except: pass
-    return jsonify({'infos': INFOS,'forwarded':forwarded})
+    return jsonify({'infos':INFOS,'forwarded':forwarded})
 
-@app.route('/admin/add_info', methods=['POST'])
+@app.route('/admin/add_info',methods=['POST'])
 def add_info():
     if not session.get('admin'):
-        return jsonify({'error': True})
-    text=request.json.get('text')
-    category=request.json.get('category')
-    if text and category:
-        INFOS.append({'text':text,'category':category})
+        return jsonify({'error':True})
+    t=request.json.get('text')
+    c=request.json.get('category')
+    if t and c:
+        INFOS.append({'text':t,'category':c})
         with open(DATA_FILE,'w',encoding='utf-8') as f:
             json.dump(INFOS,f,ensure_ascii=False,indent=2)
-    return jsonify({'ok': True})
+    return jsonify({'ok':True})
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+if __name__=='__main__':
+    app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
