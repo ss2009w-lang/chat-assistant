@@ -4,6 +4,7 @@
 <meta charset='UTF-8'>
 <title>فراس | المساعد الذكي</title>
 <link href='https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/static/theme.css'>
 <style>
 *{box-sizing:border-box}
 body{
@@ -18,30 +19,27 @@ body{
 #chat{
   width:420px;
   height:680px;
-  background:#ffffff;
-  border-radius:22px;
-  box-shadow:0 25px 60px rgba(0,0,0,.35);
+  background:var(--card);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
   display:flex;
   flex-direction:column;
   overflow:hidden
 }
 #head{
-  background:linear-gradient(135deg,#0d6efd,#0b5ed7);
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
   color:#fff;
   padding:18px;
   text-align:center;
   font-size:18px;
   font-weight:700
 }
-#sub{
-  font-size:12px;
-  opacity:.9
-}
+#sub{font-size:12px;opacity:.9}
 #msgs{
   flex:1;
   padding:14px;
   overflow-y:auto;
-  background:#f4f6f9
+  background:var(--bg)
 }
 .msg{
   max-width:80%;
@@ -49,12 +47,10 @@ body{
   padding:12px 16px;
   border-radius:18px;
   font-size:14px;
-  line-height:1.6;
-  animation:fade .3s ease
+  line-height:1.6
 }
-@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1}}
 .user{
-  background:#0d6efd;
+  background:var(--primary);
   color:#fff;
   margin-left:auto;
   border-bottom-right-radius:6px
@@ -76,21 +72,19 @@ body{
   padding:12px 16px;
   border-radius:30px;
   border:1px solid #ccc;
-  outline:none;
-  font-family:'Cairo',sans-serif
+  outline:none
 }
 #btn{
   margin-right:8px;
   padding:0 22px;
   border:none;
   border-radius:30px;
-  background:#0d6efd;
+  background:var(--primary);
   color:#fff;
-  font-family:'Cairo',sans-serif;
   font-weight:600;
   cursor:pointer
 }
-#btn:hover{background:#0b5ed7}
+#btn:hover{background:var(--primary-dark)}
 #footer{
   padding:10px;
   font-size:12px;
@@ -99,7 +93,7 @@ body{
   border-top:1px dashed #ddd
 }
 #footer a{
-  color:#0d6efd;
+  color:var(--primary);
   text-decoration:none;
   margin:0 6px
 }
@@ -121,10 +115,9 @@ body{
   </div>
 
   <div id='footer'>
-    في حال عدم توفر المعلومة:
-    <a href='mailto:psmmc@psmmc.med.sa'>psmmc@psmmc.med.sa</a>
-    |
-    <a href='tel:43880'>تحويلة 43880</a>
+    الدعم:
+    <a href='mailto:psmmc@psmmc.med.sa'>psmmc@psmmc.med.sa</a> |
+    <a href='tel:43880'>43880</a>
   </div>
 </div>
 
