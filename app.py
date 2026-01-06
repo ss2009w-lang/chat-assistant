@@ -1,8 +1,9 @@
-﻿from flask import Flask, render_template, request, jsonify, session, redirect
-import json, re, os
+﻿from flask import Flask, render_template, request, jsonify, session, redirect, send_file
+import json, re, os, sqlite3
 from datetime import datetime
 from time import time
 from collections import defaultdict
+import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FIRAS_SECRET','firas-secret')
@@ -11,7 +12,7 @@ ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD','1234')
 SUPPORT_TEXT = 'لم أجد المعلومة المطلوبة. يرجى التواصل مع دعم المتدربين عبر البريد psmmc@psmmc.med.sa أو التحويلة 43880.'
 
 DATA_FILE = 'info.json'
-FORWARDED_LOG = 'forwarded.log'
+DB_FILE = 'unanswered.db'
 
 CATEGORY_HINTS = {
     'دوام': ['دوام','ساعات','وقت','يبدأ','ينتهي'],
@@ -23,12 +24,25 @@ RATE_LIMIT = 5
 WINDOW = 60
 requests_log = defaultdict(list)
 
+def db():
+    return sqlite3.connect(DB_FILE)
+
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE,'w',encoding='utf-8') as f:
         json.dump([],f,ensure_ascii=False)
 
 with open(DATA_FILE,encoding='utf-8-sig') as f:
     INFOS = json.load(f)
+
+def log_unanswered(q):
+    conn = db()
+    c = conn.cursor()
+    c.execute(
+        'INSERT INTO unanswered (question, created_at) VALUES (?,?)',
+        (q, datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
 
 def allowed(ip):
     now = time()
@@ -57,10 +71,6 @@ def detect_category(words):
 def score(q, t):
     return len(set(q)&set(normalize(t)))
 
-def log_forwarded(q):
-    with open(FORWARDED_LOG,'a',encoding='utf-8') as f:
-        f.write(f"{datetime.now().isoformat()} | {q}\n")
-
 def find_answer(q):
     words=normalize(q)
     cat=detect_category(words)
@@ -76,7 +86,7 @@ def find_answer(q):
             best=i
     if best_s>0:
         return best['text']
-    log_forwarded(q)
+    log_unanswered(q)
     return SUPPORT_TEXT
 
 @app.route('/')
@@ -90,9 +100,11 @@ def ask():
         return jsonify({'reply':'يرجى الانتظار قبل إرسال المزيد من الأسئلة'})
     return jsonify({'reply':find_answer(request.json.get('message',''))})
 
-@app.route('/health')
-def health():
-    return jsonify({'status':'ok','infos':len(INFOS)})
+@app.route('/admin')
+def admin():
+    if not session.get('admin'):
+        return redirect('/admin/login')
+    return render_template('admin.html')
 
 @app.route('/admin/login',methods=['GET','POST'])
 def admin_login():
@@ -103,34 +115,19 @@ def admin_login():
         return jsonify({'ok':False})
     return render_template('admin_login.html')
 
-@app.route('/admin')
-def admin():
+@app.route('/admin/export/unanswered')
+def export_unanswered():
     if not session.get('admin'):
         return redirect('/admin/login')
-    return render_template('admin.html')
 
-@app.route('/admin/data')
-def admin_data():
-    if not session.get('admin'):
-        return jsonify({'error':True})
-    forwarded=[]
-    try:
-        with open(FORWARDED_LOG,encoding='utf-8') as f:
-            forwarded=list(dict.fromkeys([l.strip() for l in f if l.strip()]))
-    except: pass
-    return jsonify({'infos':INFOS,'forwarded':forwarded})
+    conn = db()
+    df = pd.read_sql_query('SELECT * FROM unanswered', conn)
+    conn.close()
 
-@app.route('/admin/add_info',methods=['POST'])
-def add_info():
-    if not session.get('admin'):
-        return jsonify({'error':True})
-    t=request.json.get('text')
-    c=request.json.get('category')
-    if t and c:
-        INFOS.append({'text':t,'category':c})
-        with open(DATA_FILE,'w',encoding='utf-8') as f:
-            json.dump(INFOS,f,ensure_ascii=False,indent=2)
-    return jsonify({'ok':True})
+    file = 'unanswered_questions.xlsx'
+    df.to_excel(file, index=False)
+
+    return send_file(file, as_attachment=True)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
