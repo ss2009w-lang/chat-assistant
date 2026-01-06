@@ -10,6 +10,7 @@ with open('knowledge.json', encoding='utf-8-sig') as f:
 
 LOG_FILE = 'unanswered.log'
 SUGGEST_LIMIT = 3
+MIN_SUGGEST_SCORE = 1
 
 def normalize(text):
     text = text.lower()
@@ -38,9 +39,19 @@ def find_answer_with_suggestions(user_input):
 
     if best_score == 0:
         log_unanswered(user_input)
-        suggestions = [i['question'] for s, i in scored[:SUGGEST_LIMIT]]
         return {
-            'answer': 'لا أملك إجابة مباشرة، هل تقصد أحد هذه الأسئلة؟',
+            'answer': 'عذرًا، لا تتوفر لدي معلومات حول هذا السؤال حاليًا.',
+            'suggestions': []
+        }
+
+    if best_score < MIN_SUGGEST_SCORE:
+        suggestions = [
+            i['question']
+            for s, i in scored[:SUGGEST_LIMIT]
+            if s >= MIN_SUGGEST_SCORE
+        ]
+        return {
+            'answer': 'هل تقصد أحد هذه الأسئلة؟',
             'suggestions': suggestions
         }
 
