@@ -1,5 +1,8 @@
 ﻿window.onload=function(){
   add('bot','السلام عليكم ورحمة الله وبركاته، معك المساعد الذكي فراس. كيف يمكنني خدمتك؟')
+  document.getElementById('input').addEventListener('keydown',function(e){
+    if(e.key==='Enter'){send()}
+  })
 }
 
 function send(){
