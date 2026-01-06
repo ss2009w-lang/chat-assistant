@@ -82,6 +82,15 @@ def chat():
 def ask():
     return jsonify({'reply': find_answer(request.json.get('message',''))})
 
+@app.route('/health')
+def health():
+    return jsonify({
+        'status':'ok',
+        'bot':'firas',
+        'infos':len(INFOS),
+        'time':datetime.now().isoformat()
+    })
+
 @app.route('/admin/login', methods=['GET','POST'])
 def admin_login():
     if request.method == 'POST':
