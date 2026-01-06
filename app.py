@@ -59,7 +59,7 @@ def score(q, t):
 
 def log_forwarded(q):
     with open(FORWARDED_LOG,'a',encoding='utf-8') as f:
-        f.write(f\"{datetime.now().isoformat()} | {q}\\n\")
+        f.write(f"{datetime.now().isoformat()} | {q}\n")
 
 def find_answer(q):
     words=normalize(q)
