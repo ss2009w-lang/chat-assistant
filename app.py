@@ -14,10 +14,20 @@ SUPPORT_TEXT = 'لم أجد المعلومة المطلوبة. يرجى التو
 DATA_FILE = 'info.json'
 DB_FILE = 'unanswered.db'
 
+SYNONYMS = {
+    'دوام': ['دوام','ساعات','عمل','وقت'],
+    'موقع': ['اين','أين','موقع','مبنى','مكان'],
+    'تواصل': ['اتصال','هاتف','تواصل','رقم','ايميل','بريد','تحويلة']
+}
+
+STOP_WORDS = [
+    'متى','هل','في','من','الى','على','ما','ماذا','كيف','كم','هذا','هذه','هناك'
+]
+
 CATEGORY_HINTS = {
-    'دوام': ['دوام','ساعات','وقت','يبدأ','ينتهي'],
+    'دوام': ['دوام','ساعات','عمل','وقت'],
     'تواصل': ['اتصال','هاتف','بريد','ايميل','تحويلة'],
-    'مواقع': ['اين','موقع','مبنى','قسم','دور']
+    'مواقع': ['اين','أين','موقع','مبنى','مكان']
 }
 
 RATE_LIMIT = 5
@@ -41,6 +51,41 @@ if not os.path.exists(DATA_FILE):
 with open(DATA_FILE,encoding='utf-8-sig') as f:
     INFOS = json.load(f)
 
+def map_synonym(word):
+    for k,v in SYNONYMS.items():
+        if word in v:
+            return k
+    return word
+
+def normalize(text):
+    text=text.lower()
+    text=re.sub(r'[^\w\s]','',text)
+    words=[]
+    for w in text.split():
+        if w in STOP_WORDS:
+            continue
+        if w.startswith('ال') and len(w)>2:
+            w=w[2:]
+        words.append(map_synonym(w))
+    return words
+
+def detect_category(words):
+    for c,k in CATEGORY_HINTS.items():
+        if any(x in words for x in k):
+            return c
+    return None
+
+def score(query_words, text):
+    text_words = normalize(text)
+    score = 0
+    for w in query_words:
+        if w in text_words:
+            if w in SYNONYMS:
+                score += 3
+            else:
+                score += 1
+    return score
+
 def log_unanswered(q):
     conn=db()
     c=conn.cursor()
@@ -55,20 +100,6 @@ def allowed(ip):
         return False
     requests_log[ip].append(now)
     return True
-
-def normalize(text):
-    text=text.lower()
-    text=re.sub(r'[^\w\s]','',text)
-    return [w[2:] if w.startswith('ال') and len(w)>2 else w for w in text.split()]
-
-def detect_category(words):
-    for c,k in CATEGORY_HINTS.items():
-        if any(x in words for x in k):
-            return c
-    return None
-
-def score(q,t):
-    return len(set(q)&set(normalize(t)))
 
 def find_answer(q):
     words=normalize(q)
