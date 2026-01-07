@@ -14,7 +14,8 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
   border-radius:14px;
   display:flex;
   flex-direction:column;
-  overflow:hidden
+  overflow:hidden;
+  position:relative
 }
 #header{
   background:#1976f2;
@@ -36,15 +37,8 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
   font-size:14px;
   line-height:1.5
 }
-.bot{
-  background:#e0e0e0;
-  align-self:flex-start
-}
-.user{
-  background:#1976f2;
-  color:#fff;
-  align-self:flex-end
-}
+.bot{background:#e0e0e0;align-self:flex-start}
+.user{background:#1976f2;color:#fff;align-self:flex-end}
 #footer{
   display:flex;
   padding:10px;
@@ -67,11 +61,48 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
   margin-right:8px;
   cursor:pointer
 }
+#login{
+  position:absolute;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:#0008;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:10
+}
+#login .box{
+  background:#fff;
+  padding:20px;
+  width:90%;
+  border-radius:10px
+}
+#login input, #login button{
+  width:100%;
+  padding:10px;
+  margin-top:10px
+}
+#login button{
+  background:#1976f2;
+  color:#fff;
+  border:none
+}
 </style>
 </head>
 <body>
 
 <div id='container'>
+
+  <div id='login'>
+    <div class='box'>
+      <h3 style='text-align:center'>تسجيل الدخول</h3>
+      <input id='name' placeholder='الاسم'>
+      <input id='email' placeholder='البريد الإلكتروني'>
+      <input id='phone' placeholder='رقم الجوال'>
+      <button onclick='loginUser()'>دخول</button>
+    </div>
+  </div>
+
   <div id='header'>فراس</div>
 
   <div id='messages'>
@@ -84,8 +115,16 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
     <button id='send' onclick='send()'>إرسال</button>
     <input id='input' placeholder='اكتب سؤالك هنا...'>
   </div>
+
 </div>
 
 <script src='/static/chat.js'></script>
+<script>
+function loginUser(){
+  if(!name.value || !email.value || !phone.value) return
+  document.getElementById('login').style.display='none'
+}
+</script>
+
 </body>
 </html>
