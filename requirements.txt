@@ -1,3 +1,4 @@
 ﻿flask
 python-docx
 gunicorn
+openpyxl

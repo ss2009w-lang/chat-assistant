@@ -1,7 +1,8 @@
-﻿from flask import Flask, request, jsonify, render_template, session
+﻿from flask import Flask, request, jsonify, render_template, session, send_file
 import json, os, re, sqlite3
 from datetime import datetime
 from docx import Document
+from openpyxl import Workbook
 
 app = Flask(__name__)
 app.secret_key = 'firas-secret'
@@ -65,8 +66,12 @@ def admin():
     c=conn.cursor()
     c.execute('SELECT id,category,priority,message,status,created_at FROM reports ORDER BY created_at DESC')
     reports=c.fetchall()
+
+    c.execute('SELECT category,COUNT(*) FROM reports GROUP BY category')
+    stats=c.fetchall()
     conn.close()
-    return render_template('admin.html',reports=reports)
+
+    return render_template('admin.html',reports=reports,stats=stats)
 
 @app.route('/admin/update',methods=['POST'])
 def update():
@@ -77,6 +82,23 @@ def update():
     conn.commit()
     conn.close()
     return jsonify({'ok':True})
+
+@app.route('/admin/export')
+def export():
+    wb=Workbook()
+    ws=wb.active
+    ws.append(['ID','Category','Priority','Message','Status','Date'])
+
+    conn=db()
+    c=conn.cursor()
+    c.execute('SELECT id,category,priority,message,status,created_at FROM reports')
+    for r in c.fetchall():
+        ws.append(r)
+    conn.close()
+
+    file='reports.xlsx'
+    wb.save(file)
+    return send_file(file,as_attachment=True)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))

@@ -5,16 +5,26 @@
 <title>لوحة إدارة البلاغات</title>
 <style>
 body{font-family:Segoe UI;background:#eef1f6;padding:20px}
-table{width:100%;border-collapse:collapse;background:#fff}
+table{width:100%;border-collapse:collapse;background:#fff;margin-top:20px}
 th,td{padding:10px;border-bottom:1px solid #ddd;text-align:center}
 th{background:#1976f2;color:#fff}
 select{padding:6px}
-button{padding:6px 10px;background:#1976f2;color:#fff;border:none;border-radius:6px}
+button,a{padding:8px 12px;background:#1976f2;color:#fff;border:none;border-radius:6px;text-decoration:none}
+.stats{display:flex;gap:10px;margin-top:10px}
+.stat{background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,.15)}
 </style>
 </head>
 <body>
 
 <h2>لوحة متابعة البلاغات</h2>
+
+<div class='stats'>
+{% for s in stats %}
+<div class='stat'>{{s[0]}} : {{s[1]}}</div>
+{% endfor %}
+</div>
+
+<a href='/admin/export'>تصدير Excel</a>
 
 <table>
 <tr>
@@ -23,7 +33,7 @@ button{padding:6px 10px;background:#1976f2;color:#fff;border:none;border-radius:
 <th>الأولوية</th>
 <th>النص</th>
 <th>الحالة</th>
-<th>تحديث</th>
+<th>التاريخ</th>
 </tr>
 
 {% for r in reports %}
@@ -42,7 +52,6 @@ button{padding:6px 10px;background:#1976f2;color:#fff;border:none;border-radius:
 <td>{{r[5]}}</td>
 </tr>
 {% endfor %}
-
 </table>
 
 <script>
