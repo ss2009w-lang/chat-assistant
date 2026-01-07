@@ -3,65 +3,89 @@
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'>
-<title>فراس | المساعد الذكي</title>
+<title>فراس</title>
 <style>
-html,body{margin:0;height:100%;font-family:Arial;background:#eef2f7}
-#loader{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:#1f3c88;color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  flex-direction:column;z-index:1000
+html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
+#container{
+  max-width:420px;
+  height:90vh;
+  margin:5vh auto;
+  background:#f2f2f2;
+  border-radius:14px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden
 }
-#login{
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:#0008;display:none;
-  align-items:center;justify-content:center;z-index:900
+#header{
+  background:#1976f2;
+  color:#fff;
+  text-align:center;
+  padding:14px;
+  font-size:18px
 }
-#login .box{
-  background:#fff;padding:20px;width:90%;max-width:400px
+#messages{
+  flex:1;
+  padding:12px;
+  overflow-y:auto
 }
-#app{display:none;height:100%;padding:10px}
-#messages{flex:1;overflow-y:auto}
-input,button{width:100%;padding:10px;margin-top:8px}
-button{background:#1f3c88;color:#fff;border:none}
+.msg{
+  max-width:80%;
+  margin-bottom:10px;
+  padding:10px 14px;
+  border-radius:14px;
+  font-size:14px;
+  line-height:1.5
+}
+.bot{
+  background:#e0e0e0;
+  align-self:flex-start
+}
+.user{
+  background:#1976f2;
+  color:#fff;
+  align-self:flex-end
+}
+#footer{
+  display:flex;
+  padding:10px;
+  background:#fff;
+  border-top:1px solid #ddd
+}
+#input{
+  flex:1;
+  border-radius:20px;
+  border:1px solid #ccc;
+  padding:10px 14px;
+  font-size:14px
+}
+#send{
+  background:#1976f2;
+  color:#fff;
+  border:none;
+  border-radius:20px;
+  padding:10px 16px;
+  margin-right:8px;
+  cursor:pointer
+}
 </style>
 </head>
 <body>
 
-<div id='loader'>
-  <div>فراس</div>
-  <span>جاري التحميل...</span>
-</div>
+<div id='container'>
+  <div id='header'>فراس</div>
 
-<div id='login'>
-  <div class='box'>
-    <input id='name' placeholder='الاسم'>
-    <input id='email' placeholder='البريد الإلكتروني'>
-    <input id='phone' placeholder='رقم الجوال'>
-    <button onclick='loginUser()'>دخول</button>
+  <div id='messages'>
+    <div class='msg bot'>
+      السلام عليكم ورحمة الله وبركاته، معك المساعد الذكي فراس كيف يمكن أن أخدمك؟
+    </div>
+  </div>
+
+  <div id='footer'>
+    <button id='send' onclick='send()'>إرسال</button>
+    <input id='input' placeholder='اكتب سؤالك هنا...'>
   </div>
 </div>
 
-<div id='app'>
-  <div id='messages'></div>
-  <input id='input' placeholder='اكتب سؤالك واضغط Enter'>
-  <button onclick='send()'>إرسال</button>
-</div>
-
 <script src='/static/chat.js'></script>
-<script>
-window.onload=function(){
-  setTimeout(function(){
-    loader.style.display='none'
-    login.style.display='flex'
-  },300)
-}
-function loginUser(){
-  if(!name.value||!email.value||!phone.value)return
-  login.style.display='none'
-  app.style.display='flex'
-}
-</script>
-
 </body>
 </html>

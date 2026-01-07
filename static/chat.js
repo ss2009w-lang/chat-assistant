@@ -1,16 +1,22 @@
 ﻿const input=document.getElementById('input')
 const messages=document.getElementById('messages')
 
-input.addEventListener('keydown',function(e){
-  if(e.key==='Enter'){send()}
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter')send()
 })
+
+function add(text,type){
+  const d=document.createElement('div')
+  d.className='msg '+type
+  d.innerText=text
+  messages.appendChild(d)
+  messages.scrollTop=messages.scrollHeight
+}
 
 function send(){
   const t=input.value.trim()
   if(!t)return
-  const u=document.createElement('div')
-  u.innerText=t
-  messages.appendChild(u)
+  add(t,'user')
   input.value=''
   fetch('/ask',{
     method:'POST',
@@ -18,10 +24,5 @@ function send(){
     body:JSON.stringify({message:t})
   })
   .then(r=>r.json())
-  .then(d=>{
-    const b=document.createElement('div')
-    b.innerText=d.reply
-    messages.appendChild(b)
-    messages.scrollTop=messages.scrollHeight
-  })
+  .then(d=>add(d.reply,'bot'))
 }
