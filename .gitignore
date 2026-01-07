@@ -1,3 +1,4 @@
-﻿*.txt
+﻿debug.log
+*.txt
 service.db
 uploads/
