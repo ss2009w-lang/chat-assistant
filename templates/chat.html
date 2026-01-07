@@ -15,9 +15,33 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
 #footer{display:flex;padding:10px;background:#fff}
 #input{flex:1;padding:10px;border-radius:20px;border:1px solid #ccc}
 #send{background:#1976f2;color:#fff;border:none;border-radius:20px;padding:10px 16px;margin-right:8px}
-#login,#rate{position:absolute;top:0;left:0;width:100%;height:100%;background:#0008;display:flex;align-items:center;justify-content:center;z-index:99}
-.box{background:#fff;padding:20px;width:90%;border-radius:10px}
-.box input,.box button{width:100%;padding:10px;margin-top:10px}
+
+#login{
+  position:absolute;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:#0009;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999
+}
+#loginBox{
+  background:#fff;
+  padding:20px;
+  width:90%;
+  border-radius:10px
+}
+#loginBox input,#loginBox button{
+  width:100%;
+  padding:10px;
+  margin-top:10px
+}
+#loginBox button{
+  background:#1976f2;
+  color:#fff;
+  border:none
+}
 </style>
 </head>
 <body>
@@ -25,41 +49,56 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
 <div id='container'>
 
 <div id='login'>
-<div class='box'>
-<input id='name' placeholder='الاسم'>
-<input id='email' placeholder='البريد'>
-<input id='phone' placeholder='الجوال'>
-<button onclick='loginUser()'>دخول</button>
-</div>
-</div>
-
-<div id='rate' style='display:none'>
-<div class='box'>
-<select id='rating'>
-<option value='5'>⭐⭐⭐⭐⭐</option>
-<option value='4'>⭐⭐⭐⭐</option>
-<option value='3'>⭐⭐⭐</option>
-<option value='2'>⭐⭐</option>
-<option value='1'>⭐</option>
-</select>
-<button onclick='sendRate()'>إرسال التقييم</button>
-</div>
+  <div id='loginBox'>
+    <h3 style='text-align:center'>تسجيل الدخول</h3>
+    <input id='name'>
+    <input id='email'>
+    <input id='phone'>
+    <button id='loginBtn'>دخول</button>
+  </div>
 </div>
 
 <div id='header'>فراس</div>
 
-<div id='messages'></div>
+<div id='messages'>
+  <div class='msg bot'>السلام عليكم ورحمة الله وبركاته، معك المساعد الذكي فراس كيف يمكن أن أخدمك؟</div>
+</div>
 
 <div id='footer'>
-<button id='send' onclick='send()'>إرسال</button>
-<input id='input'>
+  <button id='send'>إرسال</button>
+  <input id='input'>
 </div>
 
 </div>
 
 <script>
-const messages=document.getElementById('messages')
-const input=document.getElementById('input')
+const loginBtn = document.getElementById('loginBtn')
+const loginDiv = document.getElementById('login')
+const input = document.getElementById('input')
+const messages = document.getElementById('messages')
+
+loginBtn.onclick = function(){
+  if(!name.value || !email.value || !phone.value) return
+
+  fetch('/login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:name.value,
+      email:email.value,
+      phone:phone.value
+    })
+  })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.ok === true){
+      loginDiv.style.display = 'none'
+    }
+  })
+}
+
+document.getElementById('send').onclick = send
+input.addEventListener('keydown',e=>{if(e.key==='Enter')send()})
 
 function add(t,c){
   const d=document.createElement('div')
@@ -67,14 +106,6 @@ function add(t,c){
   d.innerText=t
   messages.appendChild(d)
   messages.scrollTop=messages.scrollHeight
-}
-
-function loginUser(){
-  fetch('/login',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name:name.value,email:email.value,phone:phone.value})
-  }).then(()=>login.style.display='none')
 }
 
 function send(){
@@ -86,18 +117,9 @@ function send(){
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({message:q})
-  }).then(r=>r.json()).then(d=>{
-    add(d.reply,'bot')
-    setTimeout(()=>rate.style.display='flex',1500)
   })
-}
-
-function sendRate(){
-  fetch('/rate',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({rating:rating.value})
-  }).then(()=>location.reload())
+  .then(r=>r.json())
+  .then(d=>add(d.reply,'bot'))
 }
 </script>
 
