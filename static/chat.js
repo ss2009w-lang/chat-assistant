@@ -1,9 +1,16 @@
-﻿function send(){
+﻿const input=document.getElementById('input')
+const messages=document.getElementById('messages')
+
+input.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){send()}
+})
+
+function send(){
   const t=input.value.trim()
   if(!t)return
-  const m=document.createElement('div')
-  m.innerText=t
-  messages.appendChild(m)
+  const u=document.createElement('div')
+  u.innerText=t
+  messages.appendChild(u)
   input.value=''
   fetch('/ask',{
     method:'POST',
@@ -15,5 +22,6 @@
     const b=document.createElement('div')
     b.innerText=d.reply
     messages.appendChild(b)
+    messages.scrollTop=messages.scrollHeight
   })
 }

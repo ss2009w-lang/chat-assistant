@@ -18,8 +18,14 @@ html,body{margin:0;height:100%;font-family:Arial;background:#eef2f7}
   flex-direction:column;
   z-index:9999
 }
-#loader span{margin-top:10px;font-size:14px;opacity:.9}
-#app{display:none;height:100%}
+#app{
+  display:flex;
+  flex-direction:column;
+  height:100%;
+  padding:10px
+}
+#messages{flex:1;overflow-y:auto}
+input,button{padding:10px;margin-top:5px}
 </style>
 </head>
 <body>
@@ -31,7 +37,7 @@ html,body{margin:0;height:100%;font-family:Arial;background:#eef2f7}
 
 <div id='app'>
   <div id='messages'></div>
-  <input id='input' placeholder='اكتب سؤالك'>
+  <input id='input' placeholder='اكتب سؤالك واضغط Enter'>
   <button onclick='send()'>إرسال</button>
 </div>
 
@@ -39,9 +45,8 @@ html,body{margin:0;height:100%;font-family:Arial;background:#eef2f7}
 <script>
 window.onload=function(){
   setTimeout(function(){
-    loader.style.display='none'
-    app.style.display='block'
-  },700)
+    document.getElementById('loader').style.display='none'
+  },300)
 }
 </script>
 
