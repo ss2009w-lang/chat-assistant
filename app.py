@@ -1,4 +1,4 @@
-﻿from flask import Flask, render_template, request, jsonify, session, redirect, send_file
+﻿from flask import Flask, request, jsonify, render_template, redirect, send_file
 import json, re, os, sqlite3
 from datetime import datetime
 from time import time
@@ -47,7 +47,7 @@ if not os.path.exists(DATA_FILE):
     with open(DATA_FILE,'w',encoding='utf-8') as f:
         json.dump([],f,ensure_ascii=False)
 
-with open(DATA_FILE,encoding='utf-8-sig') as f:
+with open(DATA_FILE,'r',encoding='utf-8-sig') as f:
     INFOS = json.load(f)
 
 def split_text(text, max_len=500):
@@ -141,27 +141,18 @@ def ask():
 
 @app.route('/admin')
 def admin():
-    if not session.get('admin'):
-        return redirect('/admin/login')
     return render_template('admin.html')
 
-@app.route('/admin/login',methods=['GET','POST'])
+@app.route('/admin/login',methods=['POST'])
 def admin_login():
-    if request.method=='POST':
-        if request.json.get('pw')==ADMIN_PASSWORD:
-            session['admin']=True
-            return jsonify({'ok':True})
-        return jsonify({'ok':False})
-    return render_template('admin_login.html')
+    if request.json.get('pw')==ADMIN_PASSWORD:
+        return jsonify({'ok':True})
+    return jsonify({'ok':False})
 
 @app.route('/admin/add_info',methods=['POST'])
 def add_info():
-    if not session.get('admin'):
-        return jsonify({'error':True})
-
-    data = request.get_json(force=True)
-    text = data.get('text','').strip()
-    category = data.get('category','')
+    text = request.json.get('text','').strip()
+    category = request.json.get('category','')
 
     if not text or not category:
         return jsonify({'error':True})
@@ -178,8 +169,6 @@ def add_info():
 
 @app.route('/admin/export/unanswered')
 def export_unanswered():
-    if not session.get('admin'):
-        return redirect('/admin/login')
     conn=db()
     df=pd.read_sql_query('SELECT * FROM unanswered',conn)
     conn.close()
