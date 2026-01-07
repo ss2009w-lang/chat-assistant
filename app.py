@@ -7,6 +7,7 @@ import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FIRAS_SECRET','firas-secret')
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD','1234')
 SUPPORT_TEXT = 'لم أجد المعلومة المطلوبة. يرجى التواصل مع دعم المتدربين عبر البريد psmmc@psmmc.med.sa أو التحويلة 43880.'
@@ -20,9 +21,7 @@ SYNONYMS = {
     'تواصل': ['اتصال','هاتف','تواصل','رقم','ايميل','بريد','تحويلة']
 }
 
-STOP_WORDS = [
-    'متى','هل','في','من','الى','على','ما','ماذا','كيف','كم','هذا','هذه','هناك'
-]
+STOP_WORDS = ['متى','هل','في','من','الى','على','ما','ماذا','كيف','كم','هذا','هذه','هناك']
 
 CATEGORY_HINTS = {
     'دوام': ['دوام','ساعات','عمل','وقت'],
@@ -50,6 +49,19 @@ if not os.path.exists(DATA_FILE):
 
 with open(DATA_FILE,encoding='utf-8-sig') as f:
     INFOS = json.load(f)
+
+def split_text(text, max_len=400):
+    parts=[]
+    current=''
+    for line in text.split('\n'):
+        if len(current)+len(line) < max_len:
+            current += line.strip() + ' '
+        else:
+            parts.append(current.strip())
+            current = line.strip() + ' '
+    if current.strip():
+        parts.append(current.strip())
+    return parts
 
 def map_synonym(word):
     for k,v in SYNONYMS.items():
@@ -80,10 +92,7 @@ def score(query_words, text):
     score = 0
     for w in query_words:
         if w in text_words:
-            if w in SYNONYMS:
-                score += 3
-            else:
-                score += 1
+            score += 3 if w in SYNONYMS else 1
     return score
 
 def log_unanswered(q):
@@ -142,36 +151,22 @@ def admin_login():
         return jsonify({'ok':False})
     return render_template('admin_login.html')
 
-@app.route('/admin/unanswered')
-def admin_unanswered():
-    if not session.get('admin'):
-        return jsonify([])
-    conn=db()
-    c=conn.cursor()
-    c.execute('SELECT question, created_at FROM unanswered ORDER BY id DESC')
-    rows=[{'question':r[0],'created_at':r[1]} for r in c.fetchall()]
-    conn.close()
-    return jsonify(rows)
-
-@app.route('/admin/export/unanswered')
-def export_unanswered():
-    if not session.get('admin'):
-        return redirect('/admin/login')
-    conn=db()
-    df=pd.read_sql_query('SELECT * FROM unanswered',conn)
-    conn.close()
-    file='unanswered_questions.xlsx'
-    df.to_excel(file,index=False)
-    return send_file(file,as_attachment=True)
-
 @app.route('/admin/add_info',methods=['POST'])
 def add_info():
     if not session.get('admin'):
         return jsonify({'error':True})
-    INFOS.append({'text':request.json['text'],'category':request.json['category']})
+
+    text = request.json['text']
+    category = request.json['category']
+
+    chunks = split_text(text)
+    for c in chunks:
+        INFOS.append({'text':c,'category':category})
+
     with open(DATA_FILE,'w',encoding='utf-8') as f:
         json.dump(INFOS,f,ensure_ascii=False,indent=2)
-    return jsonify({'ok':True})
+
+    return jsonify({'ok':True,'chunks':len(chunks)})
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
