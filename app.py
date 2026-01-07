@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, render_template, session, send_file
+﻿from flask import Flask, request, jsonify, render_template, session, send_file, redirect
 import json, os, re, sqlite3
 from datetime import datetime
 from docx import Document
@@ -60,21 +60,45 @@ def report():
     conn.close()
     return jsonify({'ok':True})
 
-@app.route('/admin')
-def admin():
+@app.route('/admin/login',methods=['GET','POST'])
+def admin_login():
+    if request.method=='GET':
+        return render_template('admin_login.html')
+    d=request.form
     conn=db()
     c=conn.cursor()
-    c.execute('SELECT id,category,priority,message,status,created_at FROM reports ORDER BY created_at DESC')
-    reports=c.fetchall()
-
-    c.execute('SELECT category,COUNT(*) FROM reports GROUP BY category')
-    stats=c.fetchall()
+    c.execute('SELECT role FROM admins WHERE username=? AND password=?',(d['username'],d['password']))
+    r=c.fetchone()
     conn.close()
+    if r:
+        session['admin_role']=r[0]
+        return redirect('/admin')
+    return redirect('/admin/login')
 
-    return render_template('admin.html',reports=reports,stats=stats)
+@app.route('/admin')
+def admin():
+    if 'admin_role' not in session:
+        return redirect('/admin/login')
+
+    conn=db()
+    c=conn.cursor()
+
+    if session['admin_role']!='super':
+        c.execute(
+          'SELECT id,category,priority,message,status,created_at FROM reports WHERE category IN (SELECT category FROM report_roles WHERE role=?)',
+          (session['admin_role'],)
+        )
+    else:
+        c.execute('SELECT id,category,priority,message,status,created_at FROM reports')
+
+    reports=c.fetchall()
+    conn.close()
+    return render_template('admin.html',reports=reports)
 
 @app.route('/admin/update',methods=['POST'])
 def update():
+    if 'admin_role' not in session:
+        return jsonify({'ok':False})
     d=request.json
     conn=db()
     c=conn.cursor()
@@ -82,23 +106,6 @@ def update():
     conn.commit()
     conn.close()
     return jsonify({'ok':True})
-
-@app.route('/admin/export')
-def export():
-    wb=Workbook()
-    ws=wb.active
-    ws.append(['ID','Category','Priority','Message','Status','Date'])
-
-    conn=db()
-    c=conn.cursor()
-    c.execute('SELECT id,category,priority,message,status,created_at FROM reports')
-    for r in c.fetchall():
-        ws.append(r)
-    conn.close()
-
-    file='reports.xlsx'
-    wb.save(file)
-    return send_file(file,as_attachment=True)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
