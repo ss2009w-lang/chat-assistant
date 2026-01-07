@@ -1,21 +1,31 @@
-﻿<!-- نفس الواجهة السابقة -->
+﻿<!DOCTYPE html>
+<html lang='ar' dir='rtl'>
+<head>
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>فراس</title>
+<style>
+body{margin:0;font-family:Segoe UI;background:#0b1220;color:#fff}
+#box{max-width:420px;margin:10vh auto;background:#fff;color:#000;border-radius:16px;padding:20px}
+button,input{width:100%;padding:12px;margin-top:10px}
+button{background:#1976f2;color:#fff;border:none;border-radius:8px}
+</style>
+</head>
+<body>
+<div id='box'>
+<h3>فراس – المساعد الذكي</h3>
+<input id='q' placeholder='اكتب سؤالك'>
+<button onclick='send()'>إرسال</button>
+<div id='r'></div>
+</div>
 <script>
-function openReport(){
-  const msg=prompt('اكتب نص البلاغ')
-  if(!msg)return
-  const cat=prompt('نوع البلاغ: طبي / إداري / تقني')
-  const pr=prompt('الأولوية: عاجل / عادي')
-
-  fetch('/report',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      category:cat,
-      priority:pr,
-      message:msg
-    })
-  }).then(r=>r.json()).then(d=>{
-    if(d.ok)alert('تم تسجيل البلاغ بنجاح')
-  })
+function send(){
+fetch('/ask',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({message:q.value})
+}).then(r=>r.json()).then(d=>r.innerText=d.reply)
 }
 </script>
+</body>
+</html>
