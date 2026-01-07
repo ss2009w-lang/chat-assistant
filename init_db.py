@@ -1,16 +1,27 @@
 ﻿import sqlite3
 
-conn = sqlite3.connect('unanswered.db')
+conn = sqlite3.connect('service.db')
 c = conn.cursor()
 
 c.execute('''
-CREATE TABLE IF NOT EXISTS unanswered (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    question TEXT NOT NULL,
-    created_at TEXT NOT NULL
+CREATE TABLE IF NOT EXISTS tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  email TEXT,
+  phone TEXT,
+  type TEXT,
+  created_at TEXT
+)
+''')
+
+c.execute('''
+CREATE TABLE IF NOT EXISTS ratings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT,
+  rating INTEGER,
+  created_at TEXT
 )
 ''')
 
 conn.commit()
 conn.close()
-print('DB READY')

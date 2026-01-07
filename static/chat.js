@@ -1,25 +1,39 @@
-﻿function show(id){
+﻿let user={}
+
+function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
 }
 
-function goOptions(){show('options')}
-function startChat(){
-  show('chat')
-  add('bot','السلام عليكم، معك المساعد الذكي فراس. كيف يمكنني خدمتك؟')
+function goOptions(){
+  user.name=name.value
+  user.email=email.value
+  user.phone=phone.value
+  show('options')
 }
+
+function startChat(){show('chat')}
+
 function openTicket(){show('ticket')}
+
 function submitTicket(){
-  alert('تم استلام التذكرة وسيتم التواصل معك')
-  show('end')
+  fetch('/ticket',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:user.name,
+      email:user.email,
+      phone:user.phone,
+      type:document.getElementById('ticketType').value
+    })
+  }).then(()=>show('end'))
 }
 
 function send(){
-  const i=document.getElementById('input')
-  const t=i.value.trim()
+  const t=input.value.trim()
   if(!t)return
   add('user',t)
-  i.value=''
+  input.value=''
   fetch('/ask',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -28,7 +42,7 @@ function send(){
   .then(r=>r.json())
   .then(d=>{
     add('bot',d.reply)
-    setTimeout(()=>show('end'),1000)
+    setTimeout(()=>show('end'),800)
   })
 }
 
@@ -36,8 +50,16 @@ function add(type,text){
   const d=document.createElement('div')
   d.className='msg '+type
   d.innerText=text
-  document.getElementById('messages').appendChild(d)
+  messages.appendChild(d)
 }
 
-function rate(){show('rate')}
-function finish(){alert('شكرًا لتقييمك');location.reload()}
+function rate(){
+  fetch('/rate',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:user.name,
+      rating:document.getElementById('rating').selectedIndex+1
+    })
+  }).then(()=>location.reload())
+}
