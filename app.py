@@ -1,4 +1,4 @@
-﻿from flask import Flask, request, jsonify, render_template
+﻿from flask import Flask, request, jsonify, render_template, session
 import json, os, re
 from docx import Document
 
@@ -34,6 +34,18 @@ def chat():
 def admin():
     return render_template('admin.html')
 
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    if not data:
+        return jsonify({'ok':False})
+    session['user'] = {
+        'name': data.get('name'),
+        'email': data.get('email'),
+        'phone': data.get('phone')
+    }
+    return jsonify({'ok':True})
+
 @app.route('/admin/upload', methods=['POST'])
 def upload():
     file = request.files.get('file')
@@ -58,6 +70,9 @@ def upload():
 
 @app.route('/ask', methods=['POST'])
 def ask():
+    if 'user' not in session:
+        return jsonify({'reply':'يرجى تسجيل الدخول أولًا'})
+
     q = request.json.get('message','')
     best = None
     score = 0

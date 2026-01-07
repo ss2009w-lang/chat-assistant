@@ -48,17 +48,53 @@ html,body{margin:0;height:100%;font-family:Arial;background:#0e1b2a}
 
 </div>
 
-<script src='/static/chat.js'></script>
 <script>
+const input=document.getElementById('input')
+const messages=document.getElementById('messages')
+
 function loginUser(){
   if(!name.value||!email.value||!phone.value)return
   fetch('/login',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name:name.value,email:email.value,phone:phone.value})
-  }).then(()=>{
-    document.getElementById('login').style.display='none'
+    body:JSON.stringify({
+      name:name.value,
+      email:email.value,
+      phone:phone.value
+    })
   })
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.ok){
+      document.getElementById('login').style.display='none'
+    }
+  })
+}
+
+input.addEventListener('keydown',e=>{
+  if(e.key==='Enter')send()
+})
+
+function add(text,type){
+  const d=document.createElement('div')
+  d.className='msg '+type
+  d.innerText=text
+  messages.appendChild(d)
+  messages.scrollTop=messages.scrollHeight
+}
+
+function send(){
+  const t=input.value.trim()
+  if(!t)return
+  add(t,'user')
+  input.value=''
+  fetch('/ask',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({message:t})
+  })
+  .then(r=>r.json())
+  .then(d=>add(d.reply,'bot'))
 }
 </script>
 
