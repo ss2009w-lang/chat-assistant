@@ -5,19 +5,16 @@
 <title>إدارة فراس</title>
 <style>
 body{font-family:Arial;background:#f5f6fa;padding:20px}
-input,button{width:100%;padding:10px;margin:10px 0}
-button{background:#1f3c88;color:#fff;border:none}
+input,button{width:100%;padding:10px;margin-top:10px}
+button{background:#1976f2;color:#fff;border:none}
 </style>
 </head>
 <body>
 
 <h3>رفع ملف Word</h3>
 
-<form id='f'>
 <input type='file' id='file' accept='.docx'>
-<input id='category' placeholder='التصنيف'>
-<button type='button' onclick='upload()'>رفع</button>
-</form>
+<button onclick='upload()'>رفع</button>
 
 <div id='status'></div>
 
@@ -25,12 +22,11 @@ button{background:#1f3c88;color:#fff;border:none}
 function upload(){
   const fd=new FormData()
   fd.append('file',file.files[0])
-  fd.append('category',category.value)
 
   fetch('/admin/upload',{method:'POST',body:fd})
   .then(r=>r.json())
   .then(d=>{
-    status.innerText=JSON.stringify(d)
+    status.innerText = d.ok ? 'تم الحفظ: '+d.count+' فقرة' : 'خطأ'
   })
 }
 </script>
