@@ -1,17 +1,15 @@
-﻿from flask import Flask, request, jsonify, render_template
+﻿from flask import Flask, request, jsonify, render_template, session
 import json, os, sqlite3, re
 from datetime import datetime
-from docx import Document
 
 app = Flask(__name__)
-app.secret_key = 'firas-secret'
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+app.secret_key = 'firas-session-secret'
 
 DATA_FILE = 'info.json'
-UPLOAD_DIR = 'uploads'
+DB_FILE = 'service.db'
 
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
+def db():
+    return sqlite3.connect(DB_FILE)
 
 if not os.path.exists(DATA_FILE):
     with open(DATA_FILE,'w',encoding='utf-8') as f:
@@ -20,53 +18,68 @@ if not os.path.exists(DATA_FILE):
 with open(DATA_FILE,'r',encoding='utf-8-sig') as f:
     INFOS = json.load(f)
 
-def split_text(text, max_len=500):
-    parts=[]
-    buf=''
-    for line in text.splitlines():
-        line=line.strip()
-        if not line:
-            continue
-        if len(buf)+len(line) <= max_len:
-            buf += ' ' + line
-        else:
-            parts.append(buf.strip())
-            buf = line
-    if buf.strip():
-        parts.append(buf.strip())
-    return parts
+def normalize(t):
+    t=t.lower()
+    t=re.sub(r'[^\w\s]','',t)
+    return t.split()
+
+def score(q,t):
+    return len(set(normalize(q)) & set(normalize(t)))
+
+def auto_ticket(q):
+    u=session.get('user',{})
+    conn=db()
+    c=conn.cursor()
+    c.execute(
+      'INSERT INTO tickets (name,email,phone,department,type,message,source,created_at) VALUES (?,?,?,?,?,?,?,?)',
+      (u.get('name'),u.get('email'),u.get('phone'),'عام','سؤال',q,'bot',datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+def find_answer(q):
+    best=None
+    smax=0
+    for i in INFOS:
+        s=score(q,i['text'])
+        if s>smax:
+            smax=s
+            best=i
+    if smax>0:
+        return best['text']
+    auto_ticket(q)
+    return 'تم تحويل سؤالك تلقائيًا إلى تذكرة، وسيتم التواصل معك.'
 
 @app.route('/')
 def chat():
     return render_template('chat.html')
 
+@app.route('/admin')
+def admin():
+    return render_template('admin.html')
+
+@app.route('/login',methods=['POST'])
+def login():
+    session['user']=request.json
+    return jsonify({'ok':True})
+
 @app.route('/ask',methods=['POST'])
 def ask():
-    return jsonify({'reply':'تم استلام سؤالك'})
+    return jsonify({'reply':find_answer(request.json.get('message',''))})
 
-@app.route('/admin/upload',methods=['POST'])
-def upload_word():
-    file = request.files.get('file')
-    category = request.form.get('category','عام')
-
-    if not file or not file.filename.endswith('.docx'):
-        return jsonify({'error':True})
-
-    path = os.path.join(UPLOAD_DIR,file.filename)
-    file.save(path)
-
-    doc = Document(path)
-    text = '\\n'.join([p.text for p in doc.paragraphs if p.text.strip()])
-
-    chunks = split_text(text)
-
-    for c in chunks:
-        INFOS.append({'text':c,'category':category})
-
-    with open(DATA_FILE,'w',encoding='utf-8') as f:
-        json.dump(INFOS,f,ensure_ascii=False,indent=2)
-
-    return jsonify({'ok':True,'saved':len(chunks)})
+@app.route('/rate',methods=['POST'])
+def rate():
+    u=session.get('user',{})
+    conn=db()
+    c=conn.cursor()
+    c.execute(
+      'INSERT INTO ratings (name,rating,created_at) VALUES (?,?,?)',
+      (u.get('name'),request.json.get('rating'),datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+    session.clear()
+    return jsonify({'ok':True})
 
 if __name__=='__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
