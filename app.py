@@ -6,22 +6,21 @@ from docx import Document
 app = Flask(__name__)
 app.secret_key = 'firas-secret'
 
-DATA_FILE = 'info.json'
-DB_FILE = 'service.db'
-UPLOAD_DIR = 'uploads'
+DATA_FILE='info.json'
+DB_FILE='service.db'
 
 def db():
     return sqlite3.connect(DB_FILE)
 
 with open(DATA_FILE,'r',encoding='utf-8-sig') as f:
-    INFOS = json.load(f)
+    INFOS=json.load(f)
 
 def normalize(t):
     t=t.lower()
     t=re.sub(r'[^\w\s]','',t)
     return t.split()
 
-def similarity(q, text):
+def similarity(q,text):
     return len(set(normalize(q)) & set(normalize(text)))
 
 @app.route('/')
@@ -49,22 +48,32 @@ def ask():
 
 @app.route('/report',methods=['POST'])
 def report():
-    if 'user' not in session:
-        return jsonify({'ok':False})
     d=request.json
     conn=db()
     c=conn.cursor()
     c.execute(
       'INSERT INTO reports (user_id,category,priority,message,status,created_at) VALUES (?,?,?,?,?,?)',
-      (
-        session['user'].get('email'),
-        d.get('category'),
-        d.get('priority'),
-        d.get('message'),
-        'جديد',
-        datetime.now().isoformat()
-      )
+      (session['user'].get('email'),d['category'],d['priority'],d['message'],'جديد',datetime.now().isoformat())
     )
+    conn.commit()
+    conn.close()
+    return jsonify({'ok':True})
+
+@app.route('/admin')
+def admin():
+    conn=db()
+    c=conn.cursor()
+    c.execute('SELECT id,category,priority,message,status,created_at FROM reports ORDER BY created_at DESC')
+    reports=c.fetchall()
+    conn.close()
+    return render_template('admin.html',reports=reports)
+
+@app.route('/admin/update',methods=['POST'])
+def update():
+    d=request.json
+    conn=db()
+    c=conn.cursor()
+    c.execute('UPDATE reports SET status=? WHERE id=?',(d['status'],d['id']))
     conn.commit()
     conn.close()
     return jsonify({'ok':True})
