@@ -1,19 +1,17 @@
 ﻿from flask import Flask, request, jsonify, render_template, session
-import json, os, re
+import json, os, re, sqlite3
+from datetime import datetime
 from docx import Document
 
 app = Flask(__name__)
 app.secret_key = 'firas-secret'
 
 DATA_FILE = 'info.json'
+DB_FILE = 'service.db'
 UPLOAD_DIR = 'uploads'
 
-if not os.path.exists(UPLOAD_DIR):
-    os.makedirs(UPLOAD_DIR)
-
-if not os.path.exists(DATA_FILE):
-    with open(DATA_FILE,'w',encoding='utf-8') as f:
-        json.dump([],f,ensure_ascii=False)
+def db():
+    return sqlite3.connect(DB_FILE)
 
 with open(DATA_FILE,'r',encoding='utf-8-sig') as f:
     INFOS = json.load(f)
@@ -37,8 +35,6 @@ def login():
 
 @app.route('/ask',methods=['POST'])
 def ask():
-    if 'user' not in session:
-        return jsonify({'reply':'يرجى تسجيل الدخول'})
     q=request.json.get('message','')
     best=None
     score=0
@@ -48,8 +44,30 @@ def ask():
             score=s
             best=i['text']
     if not best:
-        best='لا توجد معلومة مطابقة'
+        return jsonify({'reply':'لم أجد إجابة، يمكنك رفع بلاغ رسمي.'})
     return jsonify({'reply':best})
+
+@app.route('/report',methods=['POST'])
+def report():
+    if 'user' not in session:
+        return jsonify({'ok':False})
+    d=request.json
+    conn=db()
+    c=conn.cursor()
+    c.execute(
+      'INSERT INTO reports (user_id,category,priority,message,status,created_at) VALUES (?,?,?,?,?,?)',
+      (
+        session['user'].get('email'),
+        d.get('category'),
+        d.get('priority'),
+        d.get('message'),
+        'جديد',
+        datetime.now().isoformat()
+      )
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'ok':True})
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
