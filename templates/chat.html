@@ -2,86 +2,31 @@
 <html lang='ar' dir='rtl'>
 <head>
 <meta charset='UTF-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-<title>فراس | المساعد الذكي</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'>
+<title>فراس</title>
 <style>
-body{margin:0;font-family:Arial;background:#eef2f7}
-.screen{display:none;height:100vh;justify-content:center;align-items:center}
-.active{display:flex}
-.card{background:#fff;padding:20px;width:100%;max-width:420px;border-radius:8px}
-input,select,button{width:100%;padding:10px;margin:8px 0}
-button{background:#1f3c88;color:#fff;border:none;cursor:pointer}
-.messages{flex:1;overflow-y:auto;padding:10px}
-.msg{margin:8px 0;padding:10px;border-radius:6px}
-.user{background:#1f3c88;color:#fff}
-.bot{background:#ddd}
-.footer{padding:10px;border-top:1px solid #ccc;display:flex}
-.footer input{flex:1}
+body{margin:0;font-family:Arial}
+.modal{position:fixed;top:0;left:0;width:100%;height:100%;background:#0008;display:none;align-items:center;justify-content:center}
+.modal .box{background:#fff;padding:20px;width:90%;max-width:400px}
 </style>
 </head>
 <body>
 
-<div id='start' class='screen active'>
-  <div class='card'>
-    <h3>مرحبًا بك</h3>
+<button onclick='openLogin()'>تسجيل الدخول</button>
+
+<div id='login' class='modal'>
+  <div class='box'>
     <input id='name' placeholder='الاسم'>
-    <input id='email' placeholder='البريد الإلكتروني'>
-    <input id='phone' placeholder='رقم الجوال'>
-    <button onclick='goOptions()'>متابعة</button>
+    <input id='email' placeholder='البريد'>
+    <input id='phone' placeholder='الجوال'>
+    <button onclick='closeLogin()'>دخول</button>
   </div>
 </div>
 
-<div id='options' class='screen'>
-  <div class='card'>
-    <button onclick='startChat()'>تحدث مع البوت</button>
-    <button onclick='openTicket()'>رفع تذكرة</button>
-  </div>
-</div>
+<script>
+function openLogin(){login.style.display='flex'}
+function closeLogin(){login.style.display='none'}
+</script>
 
-<div id='ticket' class='screen'>
-  <div class='card'>
-    <h4>رفع تذكرة</h4>
-    <select id='ticketType'>
-      <option>تقنية</option>
-      <option>شكوى</option>
-      <option>استفسار عن طلب</option>
-    </select>
-    <button onclick='submitTicket()'>إرسال</button>
-  </div>
-</div>
-
-<div id='chat' class='screen'>
-  <div class='card' style='display:flex;flex-direction:column;height:100%'>
-    <div id='messages' class='messages'></div>
-    <div class='footer'>
-      <input id='input' placeholder='اكتب سؤالك...'>
-      <button onclick='send()'>إرسال</button>
-    </div>
-  </div>
-</div>
-
-<div id='end' class='screen'>
-  <div class='card'>
-    <h4>هل ترغب في خدمة أخرى؟</h4>
-    <button onclick='startChat()'>نعم</button>
-    <button onclick='rate()'>لا</button>
-  </div>
-</div>
-
-<div id='rate' class='screen'>
-  <div class='card'>
-    <h4>قيّم الخدمة</h4>
-    <select id='rating'>
-      <option>⭐</option>
-      <option>⭐⭐</option>
-      <option>⭐⭐⭐</option>
-      <option>⭐⭐⭐⭐</option>
-      <option>⭐⭐⭐⭐⭐</option>
-    </select>
-    <button onclick='finish()'>إنهاء</button>
-  </div>
-</div>
-
-<script src='/static/chat.js'></script>
 </body>
 </html>

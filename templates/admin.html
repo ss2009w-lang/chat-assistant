@@ -2,77 +2,36 @@
 <html lang='ar' dir='rtl'>
 <head>
 <meta charset='UTF-8'>
-<title>لوحة إدارة فراس</title>
-<link href='https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap' rel='stylesheet'>
+<title>إدارة فراس</title>
 <style>
-body{margin:0;font-family:'Cairo',sans-serif;background:#f4f7fb;padding:30px}
-.container{max-width:1100px;margin:auto}
-.header{background:#1f3c88;color:#fff;padding:20px;border-radius:16px;text-align:center}
-.section{background:#fff;margin-top:20px;padding:20px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
-textarea,select,button{width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px solid #ccc}
-button{background:#1f3c88;color:#fff;border:none;font-weight:600;cursor:pointer}
-button.export{background:#198754}
-.item{background:#f1f3f6;padding:12px;border-radius:12px;margin-top:10px;font-size:14px}
-.actions{display:flex;gap:10px}
+body{font-family:Arial;background:#f5f6fa;padding:20px}
+input,button{width:100%;padding:10px;margin:10px 0}
+button{background:#1f3c88;color:#fff;border:none}
 </style>
 </head>
 <body>
 
-<div class='container'>
+<h3>رفع ملف Word</h3>
 
-<div class='header'>
-<h2>لوحة إدارة المساعد الذكي فراس</h2>
-</div>
+<form id='f'>
+<input type='file' id='file' accept='.docx'>
+<input id='category' placeholder='التصنيف'>
+<button type='button' onclick='upload()'>رفع</button>
+</form>
 
-<div class='section'>
-<div class='actions'>
-<button class='export' onclick='exportExcel()'>⬇ تصدير الأسئلة غير المجابة (Excel)</button>
-</div>
-</div>
-
-<div class='section'>
-<h3>إضافة معلومة</h3>
-<textarea id='info'></textarea>
-<select id='cat'>
-<option value='دوام'>دوام</option>
-<option value='تواصل'>تواصل</option>
-<option value='مواقع'>مواقع</option>
-<option value='عام'>عام</option>
-</select>
-<button onclick='addInfo()'>حفظ المعلومة</button>
-</div>
-
-<div class='section'>
-<h3>الأسئلة غير المجابة</h3>
-<div id='unanswered'></div>
-</div>
-
-</div>
+<div id='status'></div>
 
 <script>
-fetch('/admin/unanswered').then(r=>r.json()).then(d=>{
-  const c=document.getElementById('unanswered')
-  d.forEach(q=>{
-    const e=document.createElement('div')
-    e.className='item'
-    e.innerText=q.question+' | '+q.created_at
-    c.appendChild(e)
+function upload(){
+  const fd=new FormData()
+  fd.append('file',file.files[0])
+  fd.append('category',category.value)
+
+  fetch('/admin/upload',{method:'POST',body:fd})
+  .then(r=>r.json())
+  .then(d=>{
+    status.innerText=JSON.stringify(d)
   })
-})
-
-function addInfo(){
-  fetch('/admin/add_info',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      text:document.getElementById('info').value,
-      category:document.getElementById('cat').value
-    })
-  }).then(()=>location.reload())
-}
-
-function exportExcel(){
-  window.location.href='/admin/export/unanswered'
 }
 </script>
 
