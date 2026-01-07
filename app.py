@@ -50,17 +50,20 @@ if not os.path.exists(DATA_FILE):
 with open(DATA_FILE,encoding='utf-8-sig') as f:
     INFOS = json.load(f)
 
-def split_text(text, max_len=400):
+def split_text(text, max_len=500):
     parts=[]
-    current=''
-    for line in text.split('\n'):
-        if len(current)+len(line) < max_len:
-            current += line.strip() + ' '
+    buf=''
+    for line in text.splitlines():
+        line=line.strip()
+        if not line:
+            continue
+        if len(buf)+len(line) <= max_len:
+            buf += ' ' + line
         else:
-            parts.append(current.strip())
-            current = line.strip() + ' '
-    if current.strip():
-        parts.append(current.strip())
+            parts.append(buf.strip())
+            buf = line
+    if buf.strip():
+        parts.append(buf.strip())
     return parts
 
 def map_synonym(word):
@@ -89,11 +92,11 @@ def detect_category(words):
 
 def score(query_words, text):
     text_words = normalize(text)
-    score = 0
+    s = 0
     for w in query_words:
         if w in text_words:
-            score += 3 if w in SYNONYMS else 1
-    return score
+            s += 3 if w in SYNONYMS else 1
+    return s
 
 def log_unanswered(q):
     conn=db()
@@ -156,17 +159,33 @@ def add_info():
     if not session.get('admin'):
         return jsonify({'error':True})
 
-    text = request.json['text']
-    category = request.json['category']
+    data = request.get_json(force=True)
+    text = data.get('text','').strip()
+    category = data.get('category','')
+
+    if not text or not category:
+        return jsonify({'error':True})
 
     chunks = split_text(text)
+
     for c in chunks:
         INFOS.append({'text':c,'category':category})
 
     with open(DATA_FILE,'w',encoding='utf-8') as f:
         json.dump(INFOS,f,ensure_ascii=False,indent=2)
 
-    return jsonify({'ok':True,'chunks':len(chunks)})
+    return jsonify({'ok':True,'saved':len(chunks)})
+
+@app.route('/admin/export/unanswered')
+def export_unanswered():
+    if not session.get('admin'):
+        return redirect('/admin/login')
+    conn=db()
+    df=pd.read_sql_query('SELECT * FROM unanswered',conn)
+    conn.close()
+    file='unanswered_questions.xlsx'
+    df.to_excel(file,index=False)
+    return send_file(file,as_attachment=True)
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=int(os.environ.get('PORT',5000)))
